@@ -1,9 +1,17 @@
-var app = require("express")();
-var http = require("http").createServer(app);
-var io = require("socket.io")(http);
-var express = require('express');
+const app = require("express")();
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
+const express = require("express");
+const request = require("request");
 
 let mstr = "";
+
+let words = [];
+
+// TODO: Find better word list
+request("https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-usa.txt", (err, res, body) => {
+    words = body.split("\n").filter(word => word.length > 3);
+})
 
 app.get("/", function(req, res){
   res.sendFile(__dirname + "/index.html");
@@ -18,13 +26,17 @@ io.on("connection", function(socket){
           mstr = mstr.slice(0, -1);
           io.emit("update", mstr);
       } else
-      if (char.toUpperCase() != char.toLowerCase()){
+      if (char.toUpperCase() != char.toLowerCase()) {
           mstr += char;
           io.emit("update", mstr);
+      }
+
+      if (words.includes(mstr.toLowerCase())) {
+          io.emit("word")
       }
   })
 });
 
 http.listen(3000, function(){
-  console.log("listening on *:3000");
+  console.log("serving on *:3000");
 });
